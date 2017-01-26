@@ -1,16 +1,21 @@
 #include <String.h>
 
+#define redLed 10
+#define greenLed 9
+#define blueLed 6
+
+#define b1 2
+#define b2 3
+#define b3 4
+#define b4 5
+#define var A0
+
 const int baudRate = 19200;
 const int delayVal = 1;
 
 const int redLed = 10;
 const int greenLed = 9;
 const int blueLed = 6;
-
-const int b1 = 2;
-const int b2 = 3;
-const int b3 = 4;
-const int b4 = 5;
 
 const int fadeSpeed = 50;
 
@@ -99,6 +104,11 @@ bool checkState(struct State &state) {
 
     if (state.key4 != !digitalRead(b4)) {
         state.key4 = !digitalRead(b4);
+        send = 1;
+    }
+
+    if (state.var >= analogRead(var) + 10 || state.var < analogRead(var) - 10) {
+        state.var = analogRead(var);
         send = 1;
     }
 

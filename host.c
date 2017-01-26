@@ -36,6 +36,12 @@ void releaseKey(WORD key) {
     SendInput(1, &keyboardInput, sizeof(INPUT));
 }
 
+void setVolume(int val) {
+    char cmdString[32];
+    sprintf(cmdString, "nircmd.exe setsysvolume %d", val);
+    system(cmdString);
+}
+
 void cancelIoOperation(HANDLE handle) {
     typedef BOOL (*CancelIoEx)(HANDLE hFile, LPOVERLAPPED lpOverlapped);
 
@@ -230,7 +236,7 @@ int readLine(char *buf, int len) {
 DWORD WINAPI readSerialLoop(LPVOID lpParam) {
     char buf[READ_BUFFER_SIZE] = {};
 
-    for (int x = 0; x < 50; x++) {
+    for (int x = 0; x < 50000; x++) {
 
         clearBuffer(buf, sizeof(buf));
 
@@ -249,6 +255,26 @@ DWORD WINAPI readSerialLoop(LPVOID lpParam) {
         } else {
             releaseKey(0x1E);
         }
+
+        if (state.key2) {
+            pressKey(0x30);
+        } else {
+            releaseKey(0x30);
+        }
+
+        if (state.key3) {
+            pressKey(0x2E);
+        } else {
+            releaseKey(0x2E);
+        }
+
+        if (state.key4) {
+            pressKey(0x20);
+        } else {
+            releaseKey(0x20);
+        }
+
+        setVolume(state.var * 63);
 
         clearBuffer(buf, sizeof(buf));
     }
