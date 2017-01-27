@@ -13,10 +13,6 @@
 const int baudRate = 19200;
 const int delayVal = 1;
 
-const int redLed = 10;
-const int greenLed = 9;
-const int blueLed = 6;
-
 const int fadeSpeed = 50;
 
 int speedCounter = 0;

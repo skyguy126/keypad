@@ -1,13 +1,20 @@
 #include <stdio.h>
+#include <signal.h>
 #include <stdlib.h>
 #include <windows.h>
 #include <Winuser.h>
 #include "host.h"
 #include "secure.h"
 
+static HANDLE hLoopMutex;
+static HANDLE hVolumeSema;
+static HANDLE hInterruptSema;
 static HANDLE hSerial;
 static HANDLE hReadThread;
+static HANDLE hVolumeThread;
 static INPUT keyboardInput;
+
+static volatile int volumeValue;
 
 struct State {
     int key1;
@@ -17,7 +24,7 @@ struct State {
     int var;
 };
 
-void initInput() {
+void initKeyboardInput() {
     keyboardInput.type = INPUT_KEYBOARD;
     keyboardInput.ki.wVk = 0;
     keyboardInput.ki.time = 0;
@@ -216,7 +223,6 @@ int readLine(char *buf, int len) {
         if(!ReadFile(hSerial, temp, 1, &total, NULL)) {
             DWORD err, error = GetLastError();
             printf("Read error: %lu\n", error);
-            CloseHandle(hSerial);
             return 0;
         }
 
@@ -234,9 +240,10 @@ int readLine(char *buf, int len) {
 }
 
 DWORD WINAPI readSerialLoop(LPVOID lpParam) {
+    int lastVolumeValue = 0;
     char buf[READ_BUFFER_SIZE] = {};
 
-    for (int x = 0; x < 50000; x++) {
+    while(1) {
 
         clearBuffer(buf, sizeof(buf));
 
@@ -274,7 +281,14 @@ DWORD WINAPI readSerialLoop(LPVOID lpParam) {
             releaseKey(0x20);
         }
 
-        setVolume(state.var * 63);
+        WaitForSingleObject(hLoopMutex, INFINITE);
+        volumeValue = state.var * 63;
+        ReleaseMutex(hLoopMutex);
+
+        if (lastVolumeValue != volumeValue) {
+            lastVolumeValue = volumeValue;
+            ReleaseSemaphore(hVolumeSema, 1, NULL);
+        }
 
         clearBuffer(buf, sizeof(buf));
     }
@@ -282,24 +296,84 @@ DWORD WINAPI readSerialLoop(LPVOID lpParam) {
     return 1;
 }
 
+DWORD WINAPI updateVolumeLoop(LPVOID lpParam) {
+    int curVolVal = 0;
+
+    while(1) {
+
+        WaitForSingleObject(hVolumeSema, INFINITE);
+
+        WaitForSingleObject(hLoopMutex, INFINITE);
+        curVolVal = volumeValue;
+        ReleaseMutex(hLoopMutex);
+
+        setVolume(curVolVal);
+    }
+
+    return 1;
+}
+
+void interruptHandler(int state) {
+    printf("\nExiting...\n");
+
+    // prevent main loop from restarting
+    WaitForSingleObject(hInterruptSema, INTERRUPT_DELAY);
+
+    cancelIoOperation(hSerial);
+    closeHandle(hSerial);
+    closeHandle(hReadThread);
+    closeHandle(hVolumeThread);
+    closeHandle(hLoopMutex);
+    closeHandle(hVolumeSema);
+
+    exit(0);
+}
+
 int main(int argc, char **argv) {
 
     system("cls");
-    initInput();
+    signal(SIGINT, interruptHandler);
+    initKeyboardInput();
 
-    int firstCycle = 1;
+    hLoopMutex = CreateMutex(
+        NULL,
+        FALSE,
+        NULL
+    );
+
+    hVolumeSema = CreateSemaphore(
+        NULL,
+        0,
+        1,
+        NULL
+    );
+
+    hInterruptSema = CreateSemaphore(
+        NULL,
+        1,
+        1,
+        NULL
+    );
+
+    DWORD volumeThreadId, volumeThreadParam = 1;
+    hVolumeThread = CreateThread(
+        NULL,
+        0,
+        updateVolumeLoop,
+        &volumeThreadParam,
+        0,
+        &volumeThreadId
+    );
 
     while(1) {
-        if (!firstCycle) {
-            Sleep(RELOAD_DELAY);
-        } else {
-            firstCycle = 0;
-        }
-
+        Sleep(RELOAD_DELAY);
+        
         int portOpenSuccess = openSerialPort();
         if (!portOpenSuccess) {
             continue;
         }
+
+        system("start toast.exe");
 
         DWORD readThreadId, readThreadParam = 1;
         hReadThread = CreateThread(
@@ -312,11 +386,16 @@ int main(int argc, char **argv) {
         );
 
         WaitForSingleObject(hReadThread, INFINITE);
-        //cancelIoOperation(hSerial);
+
+        // when an interrupt event happens do not proceed with this loop
+        // wait till program exits
+        WaitForSingleObject(hInterruptSema, INFINITE);
+        ReleaseSemaphore(hInterruptSema, 1, NULL);
+
+        cancelIoOperation(hSerial);
         closeHandle(hSerial);
         closeHandle(hReadThread);
-
-        break;
     }
+
     return 0;
 }
