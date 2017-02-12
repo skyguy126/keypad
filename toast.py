@@ -19,7 +19,7 @@ from win32gui import CreateWindow, DestroyWindow, LoadIcon, LoadImage,\
 class WindowsBalloonTip:
     def __init__(self):
         """Initialize."""
-        message_map = {WM_DESTROY: self.on_destroy, }
+        message_map = {WM_DESTROY: self.on_destroy}
 
         # Register the window class.
         wc = WNDCLASS()
@@ -29,7 +29,6 @@ class WindowsBalloonTip:
         self.classAtom = RegisterClass(wc)
 
     def balloon_tip(self, title="Notification", msg="...", duration=5):
-
         style = WS_OVERLAPPED | WS_SYSMENU
         self.hwnd = CreateWindow(self.classAtom, "Taskbar", style, 0, 0, CW_USEDEFAULT, CW_USEDEFAULT, 0, 0, self.hinst, None)
         UpdateWindow(self.hwnd)

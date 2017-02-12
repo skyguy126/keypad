@@ -16,6 +16,11 @@ static INPUT keyboardInput;
 
 static volatile int volumeValue;
 
+static int b1Pressed = 0;
+static int b2Pressed = 0;
+static int b3Pressed = 0;
+static int b4Pressed = 0;
+
 struct State {
     int key1;
     int key2;
@@ -78,7 +83,7 @@ int findPort(char *id) {
     if (hInstLibrary) {
         _wmicomFunc = (wmicomFunc)GetProcAddress(hInstLibrary, "wmicom");
 
-        // incase there is an error with the function, the library will still
+        // if there is an error with the function, the library will still
         // be freed and return value will show up as no devices found
         int wmicomFuncOutput = -1;
         if (_wmicomFunc) {
@@ -98,13 +103,14 @@ int openSerialPort() {
     int devicePort = findPort(DEVICE_ID);
 
     if (devicePort == -1) {
+        printf("No devices found\n");
         return 0;
     }
 
     DCB dcbSerial = {0};
     COMMTIMEOUTS comTimeouts = {0};
 
-    printf("Opening serial port...   ");
+    printf("Opening serial port (COM%d)...   ", devicePort);
     sprintf(portString, "\\\\.\\COM%d", devicePort);
 
     // Open serial port
@@ -254,35 +260,47 @@ DWORD WINAPI readSerialLoop(LPVOID lpParam) {
 
         struct State state = deserialize(buf, sizeof(buf));
 
+        #ifdef DEBUG_MODE
         printf("Key1: %d Key2: %d Key3: %d Key4: %d Var: %d\n",
         state.key1, state.key2, state.key3, state.key4, state.var);
+        #endif
 
-        if (state.key1) {
+        // make this more efficient
+
+        if (state.key1 && !b1Pressed) {
+            b1Pressed = 1;
             pressKey(0x1E);
-        } else {
+        } else if (!state.key1 && b1Pressed) {
+            b1Pressed = 0;
             releaseKey(0x1E);
         }
 
-        if (state.key2) {
+        if (state.key2 && !b2Pressed) {
+            b2Pressed = 1;
             pressKey(0x30);
-        } else {
+        } else if (!state.key2 && b2Pressed) {
+            b2Pressed = 0;
             releaseKey(0x30);
         }
 
-        if (state.key3) {
+        if (state.key3 && !b3Pressed) {
+            b3Pressed = 1;
             pressKey(0x2E);
-        } else {
+        } else if (!state.key3 && b3Pressed) {
+            b3Pressed = 0;
             releaseKey(0x2E);
         }
 
-        if (state.key4) {
+        if (state.key4 && !b4Pressed) {
+            b4Pressed = 1;
             pressKey(0x20);
-        } else {
+        } else if (!state.key4 && b4Pressed) {
+            b4Pressed = 0;
             releaseKey(0x20);
         }
 
         WaitForSingleObject(hLoopMutex, INFINITE);
-        volumeValue = state.var * 63;
+        volumeValue = state.var * VOLUME_MULTIPLIER;
         ReleaseMutex(hLoopMutex);
 
         if (lastVolumeValue != volumeValue) {
@@ -329,10 +347,29 @@ void interruptHandler(int state) {
     exit(0);
 }
 
+BOOL WINAPI shutdownHandler(DWORD dwCtrlType) {
+    switch (dwCtrlType)
+    {
+        case CTRL_SHUTDOWN_EVENT:
+        interruptHandler(0);
+        return TRUE;
+        case CTRL_LOGOFF_EVENT:
+        interruptHandler(0);
+        return TRUE;
+        default:
+        return FALSE;
+    }
+}
+
 int main(int argc, char **argv) {
+
+    #ifndef DEBUG_MODE
+    ShowWindow(GetConsoleWindow(), SW_HIDE);
+    #endif
 
     system("cls");
     signal(SIGINT, interruptHandler);
+    SetConsoleCtrlHandler(shutdownHandler, TRUE);
     initKeyboardInput();
 
     hLoopMutex = CreateMutex(
@@ -367,11 +404,15 @@ int main(int argc, char **argv) {
 
     while(1) {
         Sleep(RELOAD_DELAY);
-        
+
         int portOpenSuccess = openSerialPort();
         if (!portOpenSuccess) {
             continue;
         }
+
+        #ifdef DEBUG_MODE
+        system("echo %cd%");
+        #endif
 
         system("start toast.exe");
 

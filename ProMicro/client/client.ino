@@ -10,6 +10,7 @@
 #define b4 5
 #define var A0
 
+const int varSampleSize = 4;
 const int baudRate = 19200;
 const int delayVal = 1;
 
@@ -75,9 +76,8 @@ String serialize(struct State &state) {
 
 void sendState(struct State &state) {
     Serial.flush();
-    if (Serial.availableForWrite()) {
+    if (Serial.availableForWrite())
         Serial.print(serialize(state));
-    }
 }
 
 bool checkState(struct State &state) {
@@ -103,8 +103,12 @@ bool checkState(struct State &state) {
         send = 1;
     }
 
-    if (state.var >= analogRead(var) + 10 || state.var < analogRead(var) - 10) {
-        state.var = analogRead(var);
+    int varVal = 0;
+    for (int i = 0; i < varSampleSize; i++) varVal += analogRead(var);
+    varVal /= varSampleSize;
+
+    if (state.var >= varVal + 1 || state.var < varVal - 1) {
+        state.var = varVal;
         send = 1;
     }
 
