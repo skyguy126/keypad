@@ -2,6 +2,7 @@
 
 #define DEBUG_MODE
 
+#define DEVICE_ID "VID_1B4F&PID_9206"
 #define BAUD_RATE CBR_19200
 #define VOLUME_MULTIPLIER 63
 #define READ_BUFFER_SIZE 1024
@@ -11,5 +12,5 @@
 #define WMICOM3DLL "wmicom3.dll"
 
 #ifndef DEBUG_MODE
-    #define printf(fmt, ...) (0)
+#define printf(fmt, ...) (0)
 #endif

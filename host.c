@@ -4,7 +4,6 @@
 #include <windows.h>
 #include <Winuser.h>
 #include "host.h"
-#include "secure.h"
 
 static HANDLE hLoopMutex;
 static HANDLE hVolumeSema;
@@ -348,6 +347,9 @@ void interruptHandler(int state) {
 }
 
 BOOL WINAPI shutdownHandler(DWORD dwCtrlType) {
+
+    printf("shutting down...\n");
+
     switch (dwCtrlType)
     {
         case CTRL_SHUTDOWN_EVENT:
