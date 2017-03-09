@@ -4,6 +4,7 @@
 #include <windows.h>
 #include <Winuser.h>
 #include "host.h"
+#include "secure.h"
 
 static HANDLE hLoopMutex;
 static HANDLE hVolumeSema;

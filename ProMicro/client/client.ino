@@ -105,8 +105,9 @@ bool checkState(struct State &state) {
 
     int varVal = 0;
     for (int i = 0; i < varSampleSize; i++) varVal += analogRead(var);
-    varVal /= varSampleSize;
+        varVal /= varSampleSize;
 
+    varVal = 1024 - varVal;
     if (state.var >= varVal + 2 || state.var < varVal - 2) {
         state.var = varVal;
         send = 1;
