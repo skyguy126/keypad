@@ -1,7 +1,5 @@
 #pragma once
 
-#define DEBUG_MODE
-
 #define BAUD_RATE CBR_19200
 #define VOLUME_MULTIPLIER 63
 #define READ_BUFFER_SIZE 1024

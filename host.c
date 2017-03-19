@@ -269,34 +269,40 @@ DWORD WINAPI readSerialLoop(LPVOID lpParam) {
 
         if (state.key1 && !b1Pressed) {
             b1Pressed = 1;
-            pressKey(0x1E);
+            pressKey(0x1D); // ctrl
+            pressKey(0x2A); // shift
+            pressKey(0x3C); // f2
         } else if (!state.key1 && b1Pressed) {
             b1Pressed = 0;
-            releaseKey(0x1E);
+            releaseKey(0x3C); // f2
+            releaseKey(0x2A); // shift
+            releaseKey(0x1D); // ctrl
         }
 
         if (state.key2 && !b2Pressed) {
             b2Pressed = 1;
-            pressKey(0x30);
+            pressKey(0x1D); // ctrl
+            pressKey(0x2A); // shift
+            pressKey(0x3B); // f1
         } else if (!state.key2 && b2Pressed) {
             b2Pressed = 0;
-            releaseKey(0x30);
+            releaseKey(0x3B); // f1
+            releaseKey(0x2A); // shift
+            releaseKey(0x1D); // ctrl
         }
 
         if (state.key3 && !b3Pressed) {
             b3Pressed = 1;
-            pressKey(0x2E);
+            system("start DisplaySwitch.exe /extend");
         } else if (!state.key3 && b3Pressed) {
             b3Pressed = 0;
-            releaseKey(0x2E);
         }
 
         if (state.key4 && !b4Pressed) {
             b4Pressed = 1;
-            pressKey(0x20);
+            system("start DisplaySwitch.exe /internal");
         } else if (!state.key4 && b4Pressed) {
             b4Pressed = 0;
-            releaseKey(0x20);
         }
 
         WaitForSingleObject(hLoopMutex, INFINITE);
