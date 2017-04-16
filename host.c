@@ -269,26 +269,16 @@ DWORD WINAPI readSerialLoop(LPVOID lpParam) {
 
         if (state.key1 && !b1Pressed) {
             b1Pressed = 1;
-            pressKey(0x1D); // ctrl
-            pressKey(0x2A); // shift
-            pressKey(0x3C); // f2
+            system("nircmd.exe setdefaultsounddevice \"Speakers\"");
         } else if (!state.key1 && b1Pressed) {
             b1Pressed = 0;
-            releaseKey(0x3C); // f2
-            releaseKey(0x2A); // shift
-            releaseKey(0x1D); // ctrl
         }
 
         if (state.key2 && !b2Pressed) {
             b2Pressed = 1;
-            pressKey(0x1D); // ctrl
-            pressKey(0x2A); // shift
-            pressKey(0x3B); // f1
+            system("nircmd.exe setdefaultsounddevice \"Headset Earphone\"");
         } else if (!state.key2 && b2Pressed) {
             b2Pressed = 0;
-            releaseKey(0x3B); // f1
-            releaseKey(0x2A); // shift
-            releaseKey(0x1D); // ctrl
         }
 
         if (state.key3 && !b3Pressed) {
